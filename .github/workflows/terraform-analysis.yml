@@ -1,10 +1,11 @@
 name: Terraform Analysis
 on:
-  pull_request:
-    branches:
-      - integration
-      - main
-      - develop
+  workflow_call:
+  #pull_request:
+  #  branches:
+  #    - integration
+  #    - main
+  #    - develop
 
 jobs:
   terraform-analysis:
