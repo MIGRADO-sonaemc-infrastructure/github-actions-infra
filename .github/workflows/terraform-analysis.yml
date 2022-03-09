@@ -1,0 +1,297 @@
+name: Terraform Analysis
+on:
+  pull_request:
+    branches:
+      - integration
+      - main
+      - develop
+
+jobs:
+  terraform-analysis:
+    name: Terraform Analysis
+    runs-on: ubuntu-latest
+    env:
+      working-directory: .
+      # credentials for the app reg that as permissions over azure subscriptions and the storage account where the tfstate is stored
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+    steps:
+      # chechout de code from the source branch of the pull request to the agent's workspace
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          
+      # hide the previous comments from the pull request history   
+      - name: Hide bot comments
+        uses: kanga333/comment-hider@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      
+      # select the terraform workspace based on destination branch of the pull request trough this conditional variable apply
+      - name: Sets env vars for release
+        run: |
+          echo "TERRAFORM_WORKSPACE=tst" >> $GITHUB_ENV
+        if: ${{ (github.base_ref == 'integration') }}
+      - name: Sets env vars for release
+        run: |
+          echo "TERRAFORM_WORKSPACE=pp" >> $GITHUB_ENV
+        if: ${{ (github.base_ref == 'develop') }}
+      - name: Sets env vars for release
+        run: |
+          echo "TERRAFORM_WORKSPACE=prd" >> $GITHUB_ENV
+        if: ${{ (github.base_ref == 'main') }}
+    
+       # configue the access to the private repo that contains the terraform modules
+       # we should generate the ssh key and store the private key in the source repo and save de public key as secret in the current repo
+       # cmd: ssh-keygen -t ed25519 -a 100 -f "dir"
+       #      ssh-keygen -p -f "dir" -m pem
+      - name: Access to modules repository
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+            ssh-private-key: ${{ secrets.GITACTION_SSHKEY }}
+      
+      # install terraform cli in the agent
+      # terraform version is fixed to prevent version conflicts between agents
+      - name: Install terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.1.3
+
+      # run terraform docs to update the readme with the new documentation and commit the changes
+      - name: Render terraform docs
+        if: always()
+        id: docs
+        uses: terraform-docs/gh-actions@main
+        with:
+          working-dir: .
+          output-file: README.md
+          output-method: inject
+          git-push: "true"
+          git-commit-message: "[Action] Updated code documentation"
+
+      
+      #check if there are format misconfigurations
+      - name: Run terraform fmt check
+        id: fmt
+        run: terraform fmt -check -diff -recursive 
+        continue-on-error: true
+
+      # if the previous step recognizes misconfigurations this step will apply the code format
+      - name: Run terraform fmt
+        if: (${{ success() }} || ${{ failure() }}) && (${{ steps.fmt.outcome }} == 'failure')
+        uses: dflook/terraform-fmt@v1
+        continue-on-error: true
+        with:
+          path: .
+      
+      # create commit with the code formatted
+      - name: Create Commit
+        if: (${{ success() }} || ${{ failure() }}) && (${{ steps.fmt.outcome }} == 'failure')
+        continue-on-error: true
+        run: |
+          sudo chmod -R ugo+rwX .
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'actions[bot]@users.noreply.github.com'
+          git commit -am "[Action] Updated code formatting"
+          git push
+
+      # install tfling
+      - uses: terraform-linters/setup-tflint@v1
+        name: Setup TFLint
+        continue-on-error: true 
+        with:
+          tflint_version: latest
+
+     # run tflint and the built in terraform validate to static code analysis
+      - name: Init & Run TFLint
+        id: tflint
+        continue-on-error: true
+        run: | 
+          tflint --init
+          tflint -f compact --no-color > tflint_result.txt
+
+      # parse the tflint results file to use it later in the report
+      - name: Get tfsec results
+        id: tflint_results
+        uses: juliangruber/read-file-action@v1
+        continue-on-error: true 
+        with:
+          path: tflint_result.txt
+
+      # initialize terrform
+      - name: Terraform Version
+        id: version
+        run: terraform version
+        continue-on-error: true 
+      
+      # initialize terrform
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        continue-on-error: true 
+        
+      # select the desired workspace
+      - name: Terraform workspace select
+        id: workspace
+        run: terraform workspace select ${{ env.TERRAFORM_WORKSPACE }}
+        continue-on-error: true 
+  
+      # run the terraform plan to get the changes to be applied
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false -no-color -out tfplan
+        continue-on-error: true   
+
+      # convert the terraform plan into a json file
+      - name: Terraform show
+        run: terraform show -json tfplan > plan.json
+        working-directory: .
+        continue-on-error: true
+
+      # run tfsec to check security concerns , this step make comments in the commit with the security recomendations
+      - name: Check security vulnerabilities
+        uses: aquasecurity/tfsec-pr-commenter-action@v1.0.5
+        id : tfsec
+        continue-on-error: true
+        with:
+          soft_fail_commenter: true
+          github_token: ${{ github.token }}
+          #tfsec_args: --sort-severity
+
+      
+      # parse the results json file from the  results file to be used in the final report
+      - name: Give permissions
+        run: sudo chmod -R ugo+rwX .
+        continue-on-error: true 
+
+      - name: Get tfsec results
+        id: tfsec_results
+        uses: juliangruber/read-file-action@v1
+        continue-on-error: true 
+        with:
+          path: ./results.json
+          
+      # intall infra cost for cost comparision between the corrent environment and the environment after the terraform apply
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v1
+        continue-on-error: true 
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+        # Generate Infracost JSON output, the following docs might be useful:
+        # Multi-project/workspaces: https://www.infracost.io/docs/features/config_file
+        # Combine Infracost JSON files: https://www.infracost.io/docs/features/cli_commands/#combined-output-formats
+      - name: Generate Infracost JSON
+        run: |
+          infracost configure set currency EUR
+          infracost breakdown --path plan.json --format json --out-file /tmp/infracost.json --terraform-workspace  ${{ env.TERRAFORM_WORKSPACE }}
+        working-directory: .
+        continue-on-error: true 
+        # Env vars can be set using the usual GitHub Actions syntax
+        # See the list of supported Infracost env vars here: https://www.infracost.io/docs/integrations/environment_variables/
+        # env:
+        #   MY_ENV: ${{ secrets.MY_ENV }}
+
+      # See https://github.com/infracost/actions/tree/master/comment
+      # for other inputs such as target-type.
+      - name: Post Infracost comment
+        uses: infracost/actions/comment@v1
+        continue-on-error: true 
+        with:
+          path: /tmp/infracost.json
+          # Choose the commenting behavior, 'update' is a good default:
+          behavior: hide-and-new # Create a single comment and update it. The "quietest" option.                 
+          # behavior: delete-and-new # Delete previous comments and create a new one.
+          # behavior: hide-and-new # Minimize previous comments and create a new one.
+          # behavior: new # Create a new cost estimate comment on every push.
+
+          
+          
+      # Generate a final report with the results of all validations
+      - name: Comment Terraform Steps 
+        uses: actions/github-script@0.9.0
+        if: github.event_name == 'pull_request' && always()
+        env:
+          DOCS_STDOUT: ${{ steps.docs.outputs.stdout }}
+          DOCS_OUTCOME: ${{ steps.docs.outcome }}
+          FMT_STDOUT: ${{ join(steps.fmt.outputs.*, '\n') }}
+          FMT_OUTCOME: ${{ steps.fmt.outcome }}
+          TFLINT_STDOUT: ${{ steps.tflint_results.outputs.content }}
+          TFLINT_OUTCOME: ${{ steps.tflint.outcome }}
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          TFSEC_STDOUT: ${{ steps.tfsec_results.outputs.content }}
+          TFSEC_OUTCOME: ${{ steps.tfsec_results.outcome }}
+          INIT_OUTCOME: ${{ steps.init.outcome }}
+          WRK_OUTCOME: ${{ steps.workspace.outcome }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Documentation 🖌\`${ process.env.DOCS_OUTCOME }\`
+            #### Terraform Format and Style 🖌\`${ process.env.FMT_OUTCOME }\`
+            <details><summary>Show Format</summary>
+   
+            \`\`\`\n
+            ${process.env.FMT_STDOUT}
+            \`\`\`
+            
+            </details>
+
+            #### Terraform Validate Code 🖌\`${ process.env.TFLINT_OUTCOME }\`
+            <details><summary>Show Validation</summary>
+   
+            \`\`\`\n
+            ${process.env.TFLINT_STDOUT}
+            \`\`\`
+            
+            </details>
+
+            #### Terraform Initialization ⚙️\`${ process.env.INIT_OUTCOME }\`
+            #### Terraform Workspace ⚙️\`${process.env.WRK_OUTCOME}\`
+
+            #### Terraform Security Check ☣️\`${ process.env.TFSEC_OUTCOME }\`
+            <details><summary>Show security results</summary>
+            
+            \`\`\`\n
+            ${process.env.TFSEC_STDOUT}
+            \`\`\`
+            
+            </details>
+
+            #### Terraform Plan 📖\`${ process.env.PLAN_OUTCOME }\`
+            <details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            ${process.env.PLAN_STDOUT}
+            \`\`\`
+          
+            </details>
+            
+                 
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+        
+      # fail the pipeline in any of the previous validations fails
+      - name: Check action status
+        if: ${{ (steps.*.outcome == 'failure') }}
+        run: exit 1
+        
+      - name: Upload tfplan artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: "tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}"
+          path: |
+            ./tfplan
+            ./.terraform.lock.hcl
+      
+
+        # FORMATAR JSON TFSEC
