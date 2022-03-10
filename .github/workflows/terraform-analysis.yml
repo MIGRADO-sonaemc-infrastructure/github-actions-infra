@@ -24,13 +24,13 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
           
       # hide the previous comments from the pull request history   
       - name: Hide bot comments
         uses: kanga333/comment-hider@master
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN }}
       
       # select the terraform workspace based on destination branch of the pull request trough this conditional variable apply
       - name: Sets env vars for release
@@ -230,7 +230,7 @@ jobs:
           INIT_OUTCOME: ${{ steps.init.outcome }}
           WRK_OUTCOME: ${{ steps.workspace.outcome }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
           script: |
             const output = `#### Terraform Documentation 🖌\`${ process.env.DOCS_OUTCOME }\`
             #### Terraform Format and Style 🖌\`${ process.env.FMT_OUTCOME }\`
