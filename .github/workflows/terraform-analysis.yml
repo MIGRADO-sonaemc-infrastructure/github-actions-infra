@@ -57,23 +57,23 @@ jobs:
           echo "TERRAFORM_WORKSPACE=prd" >> $GITHUB_ENV
         if: ${{ (github.base_ref == 'main') }}
     
-       # configue the access to the private repo that contains the terraform modules
-       # we should generate the ssh key and store the private key in the source repo and save de public key as secret in the current repo
-       # cmd: ssh-keygen -t ed25519 -a 100 -f "dir"
-       #      ssh-keygen -p -f "dir" -m pem
-      - name: Access to modules repository
+       # Configue the SSH public key to access the private repo that contains the terraform modules
+       # We should generate the ssh key and store the private key as a secret in the current repo and add the public key in the target repo as a deploy key
+       # cmd used to generate the prvate key: ssh-keygen -t ed25519 -a 100 -f "dir/private_key"
+       #                                      ssh-keygen -p -f "dir/private_key" -m pem
+      - name: Generate public SSH
         uses: webfactory/ssh-agent@v0.5.4
         with:
-            ssh-private-key: ${{ secrets.ssh_git }}
+            ssh-private-key: ${{ secrets.GITACTION_SSHKEY }}
       
-      # install terraform cli in the agent
-      # terraform version is fixed to prevent version conflicts between agents
+      # Install terraform cli in the agent
+      # Terraform version is fixed to prevent version conflicts between agents
       - name: Install terraform
         uses: hashicorp/setup-terraform@v1
         with:
-          terraform_version: 1.1.3
+          terraform_version: latest
 
-      # run terraform docs to update the readme with the new documentation and commit the changes
+      # Run terraform docs to update the readme with the new documentation and commit the changes
       - name: Render terraform docs
         if: always()
         id: docs
@@ -86,13 +86,13 @@ jobs:
           git-commit-message: "[Action] Updated code documentation"
 
       
-      #check if there are format misconfigurations
+      # Check if there are format misconfigurations
       - name: Run terraform fmt check
         id: fmt
         run: terraform fmt -check -diff -recursive 
         continue-on-error: true
 
-      # if the previous step recognizes misconfigurations this step will apply the code format
+      # If the previous step recognizes misconfigurations this step will apply the code format
       - name: Run terraform fmt
         if: (${{ success() }} || ${{ failure() }}) && (${{ steps.fmt.outcome }} == 'failure')
         uses: dflook/terraform-fmt@v1
@@ -100,7 +100,7 @@ jobs:
         with:
           path: .
       
-      # create commit with the code formatted
+      # Create commit with the code formatted
       - name: Create Commit
         if: (${{ success() }} || ${{ failure() }}) && (${{ steps.fmt.outcome }} == 'failure')
         continue-on-error: true
@@ -110,84 +110,86 @@ jobs:
           git config --global user.email 'actions[bot]@users.noreply.github.com'
           git commit -am "[Action] Updated code formatting"
           git push
-
-      # install tfling
+      # Install tfling
       - uses: terraform-linters/setup-tflint@v1
         name: Setup TFLint
         continue-on-error: true 
         with:
           tflint_version: latest
 
-     # run tflint and the built in terraform validate to static code analysis
+     # Run tflint and the built in terraform validate to static code analysis
       - name: Init & Run TFLint
         id: tflint
         continue-on-error: true
         run: | 
           tflint --init
           tflint -f compact --no-color > tflint_result.txt
-
-      # parse the tflint results file to use it later in the report
-      - name: Get tfsec results
+      # Parse the tflint results file to use it later in the report
+      - name: Get tflint results
         id: tflint_results
         uses: juliangruber/read-file-action@v1
         continue-on-error: true 
         with:
           path: tflint_result.txt
 
-      # initialize terrform
+      # Initialize terrform
       - name: Terraform Version
         id: version
         run: terraform version
         continue-on-error: true 
       
-      # initialize terrform
+      # Initialize terrform
       - name: Terraform Init
         id: init
         run: terraform init
         continue-on-error: true 
         
-      # select the desired workspace
+      # Select the desired workspace
       - name: Terraform workspace select
         id: workspace
         run: terraform workspace select ${{ env.TERRAFORM_WORKSPACE }}
         continue-on-error: true 
   
-      # run the terraform plan to get the changes to be applied
+      # Run the terraform plan to get the changes to be applied
       - name: Terraform Plan
         id: plan
         run: terraform plan -input=false -no-color -out tfplan
         continue-on-error: true   
 
-      # convert the terraform plan into a json file
+      # Convert the terraform plan into a json file
       - name: Terraform show
+        id: show
         run: terraform show -json tfplan > plan.json
         working-directory: .
         continue-on-error: true
 
-      # run tfsec to check security concerns , this step make comments in the commit with the security recomendations
-      - name: Check security vulnerabilities
+      # Run tfsec to check security concerns , this step make comments in the commit with the security recomendations
+      - name: TFSEC - Check security vulnerabilities
         uses: aquasecurity/tfsec-pr-commenter-action@v1.0.5
         id : tfsec
         continue-on-error: true
         with:
-          soft_fail_commenter: true
+          soft_fail_commenter: false
+          tfsec_version: latest
+          commenter_version: latest
           github_token: ${{ github.token }}
-          #tfsec_args: --sort-severity
-
+          tfsec_args: --workspace ${{ env.TERRAFORM_WORKSPACE }} --include-ignored --minimum-severity MEDIUM
       
-      # parse the results json file from the  results file to be used in the final report
+      # Parse the results json file from the  results file to be used in the final report
       - name: Give permissions
         run: sudo chmod -R ugo+rwX .
         continue-on-error: true 
 
-      - name: Get tfsec results
-        id: tfsec_results
-        uses: juliangruber/read-file-action@v1
+      # Parse tfsec results json file
+      - name: Parse tfsec json result
+        id: tfsec_json
         continue-on-error: true 
-        with:
-          path: ./results.json
+        run: |
+          echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
+          jq -c '.results[]|[.severity,.resource,.description,.links]' results.json | column -t -s'[],"' >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           
-      # intall infra cost for cost comparision between the corrent environment and the environment after the terraform apply
+      # Intall infra cost for cost comparision between the corrent environment and the environment after the terraform apply
       - name: Setup Infracost
         uses: infracost/actions/setup@v1
         continue-on-error: true 
@@ -208,8 +210,7 @@ jobs:
         # env:
         #   MY_ENV: ${{ secrets.MY_ENV }}
 
-      # See https://github.com/infracost/actions/tree/master/comment
-      # for other inputs such as target-type.
+      # Check infracost change action
       - name: Post Infracost comment
         uses: infracost/actions/comment@v1
         continue-on-error: true 
@@ -237,11 +238,11 @@ jobs:
           PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
           PLAN_OUTCOME: ${{ steps.plan.outcome }}
           TFSEC_STDOUT: ${{ steps.tfsec_results.outputs.content }}
-          TFSEC_OUTCOME: ${{ steps.tfsec_results.outcome }}
+          TFSEC_OUTCOME: ${{ steps.tfsec.outcome }}
           INIT_OUTCOME: ${{ steps.init.outcome }}
           WRK_OUTCOME: ${{ steps.workspace.outcome }}
         with:
-          github-token: ${{ secrets.GH_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Terraform Documentation 🖌\`${ process.env.DOCS_OUTCOME }\`
             #### Terraform Format and Style 🖌\`${ process.env.FMT_OUTCOME }\`
@@ -269,7 +270,9 @@ jobs:
             <details><summary>Show security results</summary>
             
             \`\`\`\n
-            ${process.env.TFSEC_STDOUT}
+            | Severity | Resource ID | Description | Links |
+            | --------- | ----------- | ----------- | -------------- |
+            ${{ env.TFSEC_OUTPUT }}
             \`\`\`
             
             </details>
@@ -293,12 +296,15 @@ jobs:
               body: output
             })
         
-      # fail the pipeline in any of the previous validations fails
+      # Fail the pipeline in any of the previous validations fails
       - name: Check action status
-        if: ${{ (steps.*.outcome == 'failure') }}
+        if: ${{ (steps.docs.outcome == 'failure') || (steps.fmt.outcome == 'failure') || (steps.tflint.outcome == 'failure') || (steps.plan.outcome == 'failure') || (steps.tfsec.outcome == 'failure') || (steps.init.outcome == 'failure') || (steps.plan.outcome == 'failure') || (steps.workspace.outcome == 'failure') }}
         run: exit 1
         
+
+      # Upload tfplan and .terraform.lock.hcl files as an action artifcat to used in the deploy action
       - name: Upload tfplan artifacts
+        continue-on-error: true 
         uses: actions/upload-artifact@v2
         with:
           name: "tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}"
@@ -308,3 +314,4 @@ jobs:
       
 
         # FORMATAR JSON TFSEC
+        # VER PULL REQUEST QUEUE
