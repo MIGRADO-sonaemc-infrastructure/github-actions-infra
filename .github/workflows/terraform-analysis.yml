@@ -29,7 +29,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: ${{ inputs.repository }}
-          token: ${{ secrets.GH_TOKEN }}
           path: ${{ inputs.repository }}
           
       # hide the previous comments from the pull request history   
