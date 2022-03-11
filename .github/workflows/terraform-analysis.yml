@@ -64,7 +64,7 @@ jobs:
       - name: Generate public SSH
         uses: webfactory/ssh-agent@v0.5.4
         with:
-            ssh-private-key: ${{ secrets.GITACTION_SSHKEY }}
+            ssh-private-key: ${{ secrets.ssh_git }}
       
       # Install terraform cli in the agent
       # Terraform version is fixed to prevent version conflicts between agents
