@@ -8,6 +8,8 @@ on:
     secrets:
       token:
         required: true
+      ssh_git:
+        required: true
 
   #pull_request:
   #  branches:
@@ -62,7 +64,7 @@ jobs:
       - name: Access to modules repository
         uses: webfactory/ssh-agent@v0.5.4
         with:
-            ssh-private-key: ${{ secrets.GITACTION_SSHKEY }}
+            ssh-private-key: ${{ secrets.ssh_git }}
       
       # install terraform cli in the agent
       # terraform version is fixed to prevent version conflicts between agents
