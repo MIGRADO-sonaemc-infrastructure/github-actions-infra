@@ -1,6 +1,10 @@
 name: Terraform Analysis
 on:
   workflow_call:
+    inputs:
+      repository:
+        required: true
+        type: string
   #pull_request:
   #  branches:
   #    - integration
@@ -23,7 +27,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ inputs.repository }}
           token: ${{ secrets.GH_TOKEN }}
           
       # hide the previous comments from the pull request history   
