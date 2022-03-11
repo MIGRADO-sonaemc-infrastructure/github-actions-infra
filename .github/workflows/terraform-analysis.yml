@@ -30,6 +30,7 @@ jobs:
         with:
           repository: ${{ inputs.repository }}
           token: ${{ secrets.GH_TOKEN }}
+          path: my-tools
           
       # hide the previous comments from the pull request history   
       - name: Hide bot comments
