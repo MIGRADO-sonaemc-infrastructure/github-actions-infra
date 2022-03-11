@@ -5,6 +5,10 @@ on:
       repository:
         required: true
         type: string
+    secrets:
+      token:
+        required: true
+
   #pull_request:
   #  branches:
   #    - integration
@@ -28,7 +32,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.token }}
           repository: ${{ inputs.repository }}
           path: ${{ inputs.repository }}
           
