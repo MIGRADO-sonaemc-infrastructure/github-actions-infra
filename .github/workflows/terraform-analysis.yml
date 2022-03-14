@@ -2,9 +2,6 @@ name: Terraform Analysis
 on:
   workflow_call:
     inputs:
-      repository:
-        required: true
-        type: string
       ARM_TENANT_ID:
         required: true
         type: string
@@ -54,6 +51,8 @@ jobs:
       - name: Sets env vars for release
         run: |
           echo "TERRAFORM_WORKSPACE=tst" >> $GITHUB_ENV
+          echo "ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}"
+          echo ${{ secrets.ARM_TENANT_ID }}
         if: ${{ (github.base_ref == 'integration') }}
       - name: Sets env vars for release
         run: |
