@@ -5,10 +5,18 @@ on:
       repository:
         required: true
         type: string
+      ARM_TENANT_ID:
+        required: true
+        type: string
+      ARM_CLIENT_ID:
+        required: true
+        type: string
     secrets:
       token:
         required: true
       ssh_git:
+        required: true
+      ARM_CLIENT_SECRET:
         required: true
 
   #pull_request:
