@@ -1,5 +1,22 @@
 name: Terraform deploy
 on:
+  workflow_call:
+    inputs:
+      ARM_TENANT_ID:
+        required: true
+        type: string
+      ARM_CLIENT_ID:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+      ssh_git:
+        required: true
+      ARM_CLIENT_SECRET:
+        required: true
+      INFRACOST_API_KEY:
+        required: true
   pull_request:
     types: [ closed ]
 jobs:
@@ -8,9 +25,9 @@ jobs:
     env:
      working-directory: .
      # credentials for the app reg that as permissions over azure subscriptions and the storage account where the tfstate is stored
-     ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+     ARM_CLIENT_ID: ${{ inputs.ARM_CLIENT_ID }}
      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-     ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+     ARM_TENANT_ID: ${{ inputs.ARM_TENANT_ID }}
 
     # this job will only run if the PR has been closed without being merged
     steps:
@@ -24,6 +41,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
         with:
+          token: ${{ secrets.token }}
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Give permissions
@@ -46,15 +64,19 @@ jobs:
           echo "TERRAFORM_WORKSPACE=prd" >> $GITHUB_ENV
         if: ${{ (github.base_ref == 'main') }}
 
+       # Configue the SSH public key to access the private repo that contains the terraform modules
+       # We should generate the ssh key and store the private key as a secret in the current repo and add the public key in the target repo as a deploy key
+       # cmd used to generate the prvate key: ssh-keygen -t ed25519 -a 100 -f "dir/private_key"
+       #                                      ssh-keygen -p -f "dir/private_key" -m pem
       - name: Access to modules repository
         uses: webfactory/ssh-agent@v0.5.4
         with:
-            ssh-private-key: ${{ secrets.GITACTION_SSHKEY }}
+            ssh-private-key: ${{ secrets.ssh_git }}
 
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
+          github_token: ${{secrets.token}}
           # Required, workflow file name or ID
           workflow: terraform-analysis.yml
           workflow_conclusion: success
@@ -77,14 +99,12 @@ jobs:
           ls -la
           sudo chmod -R ugo+rwX .
         working-directory: .
-
-
       
       # install terraform cli in the agent
       - name: Install terraform
         uses: hashicorp/setup-terraform@v1
         with:
-          terraform_version: 1.1.3
+          terraform_version: latest
 
       # initialize terrform
       - name: Terraform Version
