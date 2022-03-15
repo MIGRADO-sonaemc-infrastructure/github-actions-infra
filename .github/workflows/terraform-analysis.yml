@@ -307,7 +307,16 @@ jobs:
       # Fail the pipeline in any of the previous validations fails
       - name: Check action status
         if: ${{ (steps.docs.outcome == 'failure') || (steps.fmt.outcome == 'failure') || (steps.tflint.outcome == 'failure') || (steps.plan.outcome == 'failure') || (steps.tfsec.outcome == 'failure') || (steps.init.outcome == 'failure') || (steps.plan.outcome == 'failure') || (steps.workspace.outcome == 'failure') }}
-        run: exit 1
+
+        run: |
+          echo "Render terraform docs: ${{ steps.docs.outcome }}"
+          echo "Run terraform fmt check: ${{ steps.fmt.outcome }}"
+          echo "Init & Run TFLint: ${{ steps.tflint.outcome }}"
+          echo "Terraform Plan: ${{ steps.plan.outcome }}"
+          echo "TFSEC - Check security vulnerabilities: ${{ steps.tfsec.outcome }}"
+          echo "Terraform Init: ${{ steps.init.outcome }}"
+          echo "Terraform workspace select: ${{ steps.workspace.outcome }}"
+          exit 1
         
 
       # Upload tfplan and .terraform.lock.hcl files as an action artifcat to used in the deploy action
