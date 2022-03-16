@@ -237,8 +237,9 @@ jobs:
       - name: Post Plan
         continue-on-error: true 
         uses: robburger/terraform-pr-commenter@v1
-        env:
+        env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_WORKSPACE: ${{ env.TERRAFORM_WORKSPACE }}
         with:
           commenter_type: plan
           commenter_input: ${{ steps.truncate-plan.outputs.plan }}
