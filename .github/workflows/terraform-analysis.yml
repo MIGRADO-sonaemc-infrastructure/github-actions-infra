@@ -301,11 +301,11 @@ jobs:
           EOF
           )
           echo "TRUNCATED_PLAN_PART1<<EOF" >> $GITHUB_ENV
-          echo "${plan:0:65336}" >> $GITHUB_ENV
+          echo "${plan:0:65236}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           
           echo "TRUNCATED_PLAN_PART2<<EOF" >> $GITHUB_ENV
-          echo "${plan:65337:130073}" >> $GITHUB_ENV
+          echo "${plan:65237:130073}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       
       
