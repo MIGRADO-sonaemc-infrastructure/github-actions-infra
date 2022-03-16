@@ -230,7 +230,17 @@ jobs:
           # behavior: hide-and-new # Minimize previous comments and create a new one.
           # behavior: new # Create a new cost estimate comment on every push.
 
-          
+      - name: Truncate Plan
+        id: truncate-plan
+        continue-on-error: true 
+        run: echo "::set-output name=plan::${${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}:0:65536}"
+      - name: Post Plan
+        continue-on-error: true 
+        uses: robburger/terraform-pr-commenter@v1
+        with:
+          commenter_type: plan
+          commenter_input: ${{ steps.truncate-plan.outputs.plan }}
+          commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
           
       # Generate a final report with the results of all validations
       - name: Comment Terraform Steps 
