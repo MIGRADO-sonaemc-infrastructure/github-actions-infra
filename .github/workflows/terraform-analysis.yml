@@ -237,12 +237,16 @@ jobs:
           ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
           EOF
           )
-          echo "TRUNCATED_PLAN<<EOF" >> $GITHUB_ENV
+          echo "TRUNCATED_PLAN_PART1<<EOF" >> $GITHUB_ENV
           echo "${plan:0:65536}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          echo "TRUNCATED_PLAN_PART2<<EOF" >> $GITHUB_ENV
+          echo "${plan:65537:131073}" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
       
       
-      - name: Post Plan
+      - name: Post Plan Part 1
         continue-on-error: true 
         uses: robburger/terraform-pr-commenter@v1
         env: 
@@ -250,7 +254,18 @@ jobs:
           TF_WORKSPACE: ${{ env.TERRAFORM_WORKSPACE }}
         with:
           commenter_type: plan
-          commenter_input: ${{ env.TRUNCATED_PLAN }}
+          commenter_input: ${{ env.TRUNCATED_PLAN_PART1 }}
+          commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+          
+      - name: Post Plan Part 2
+        continue-on-error: true 
+        uses: robburger/terraform-pr-commenter@v1
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_WORKSPACE: ${{ env.TERRAFORM_WORKSPACE }}
+        with:
+          commenter_type: plan
+          commenter_input: ${{ env.TRUNCATED_PLAN_PART2 }}
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
           
       # Generate a final report with the results of all validations
@@ -304,16 +319,16 @@ jobs:
             ${{ env.TFSEC_OUTPUT }}
             \`\`\`
             
-            </details>
+            #</details>
 
             #### Terraform Plan 📖\`${ process.env.PLAN_OUTCOME }\`
-            <details><summary>Show Plan</summary>
+            #<details><summary>Show Plan</summary>
 
-            \`\`\`\n
-            ${process.env.PLAN_STDOUT}
-            \`\`\`
+            #\`\`\`\n
+            #${process.env.PLAN_STDOUT}
+            #\`\`\`
           
-            </details>
+            #</details>
             
                  
             *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
