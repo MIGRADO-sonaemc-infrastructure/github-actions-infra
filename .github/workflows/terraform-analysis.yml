@@ -242,7 +242,7 @@ jobs:
           TF_WORKSPACE: ${{ env.TERRAFORM_WORKSPACE }}
         with:
           commenter_type: plan
-          commenter_input: ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
+          commenter_input: ${${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}:0:65536}
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
           
       # Generate a final report with the results of all validations
