@@ -197,6 +197,16 @@ jobs:
           jq -c '.results[]|[.severity,.resource,.description,.links]' results.json | column -t -s'[],"' >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           
+      # Checks if tfsec dind't found vulnerabilities
+      - name: Parse tfsec json result
+        id: ${{ steps.tfsec_json.outcome }} == 'failure'
+        run: echo "TFSEC_STATUS=No vulnerabilities detected" >> $GITHUB_ENV
+        
+      # Checks if tfsec found vulnerabilities
+      - name: Parse tfsec json result
+        id: ${{ steps.tfsec_json.outcome }} == 'success'
+        run: echo "TFSEC_STATUS=Vulnerabilities detected" >> $GITHUB_ENV
+          
       # Intall infra cost for cost comparision between the corrent environment and the environment after the terraform apply
       - name: Setup Infracost
         uses: infracost/actions/setup@v1
@@ -273,7 +283,7 @@ jobs:
             #### Terraform Initialization ⚙️\`${ process.env.INIT_OUTCOME }\`
             #### Terraform Workspace ⚙️\`${process.env.WRK_OUTCOME}\`
 
-            #### Terraform Security Check ☣️\`${ process.env.TFSEC_OUTCOME }\`
+            #### Terraform Security Check ☣️\`${{ env.TFSEC_STATUS }}\`
             <details><summary>Show security results</summary>
             
             \`\`\`\n
@@ -333,14 +343,14 @@ jobs:
         
       # Fail the pipeline in any of the previous validations fails
       - name: Check action status
-        if: ${{ (steps.docs.outcome == 'failure') || (steps.fmt.outcome == 'failure') || (steps.tflint.outcome == 'failure') || (steps.plan.outcome == 'failure') || (steps.tfsec.outcome == 'failure') || (steps.init.outcome == 'failure') || (steps.plan.outcome == 'failure') || (steps.workspace.outcome == 'failure') }}
+        if: ${{ (steps.docs.outcome == 'failure') || (steps.fmt.outcome == 'failure') || (steps.tflint.outcome == 'failure') || (steps.plan.outcome == 'failure') || (env.TFSEC_STATUS == 'Vulnerabilities detected') || (steps.init.outcome == 'failure') || (steps.plan.outcome == 'failure') || (steps.workspace.outcome == 'failure') }}
 
         run: |
           echo "Render terraform docs: ${{ steps.docs.outcome }}"
           echo "Run terraform fmt check: ${{ steps.fmt.outcome }}"
           echo "Init & Run TFLint: ${{ steps.tflint.outcome }}"
           echo "Terraform Plan: ${{ steps.plan.outcome }}"
-          echo "TFSEC - Check security vulnerabilities: ${{ steps.tfsec.outcome }}"
+          echo "TFSEC - Check security vulnerabilities: ${{ env.TFSEC_STATUS }}"
           echo "Terraform Init: ${{ steps.init.outcome }}"
           echo "Terraform workspace select: ${{ steps.workspace.outcome }}"
           exit 1
