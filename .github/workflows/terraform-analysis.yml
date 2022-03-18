@@ -192,11 +192,9 @@ jobs:
       - name: Parse tfsec json result
         id: tfsec_json
         continue-on-error: true 
-        run: |
-          #jq -c '.results[]|[.severity,.resource,.description,.links]' results.json | column -t -s'[],"' >> $GITHUB_ENV  
-          #sort_by(.severity) |
+        run: | 
           echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
-          jq -r '.results[] | .[] | @text "| [\(.severity) | \(.resource) | \(.description) | \(.links)"' results.json
+          jq -r '.results[] | sort_by(.severity) | [.severity,.resource,.description,.links] | @text "| [\(.severity) | \(.resource) | \(.description) | \(.links)"' results.json
           echo "EOF" >> $GITHUB_ENV
           
       # Checks if tfsec dind't found vulnerabilities
