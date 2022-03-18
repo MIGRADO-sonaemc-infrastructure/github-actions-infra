@@ -194,19 +194,19 @@ jobs:
         continue-on-error: true 
         run: | 
           echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
-          jq -r '.results[] | [.severity,.resource,.description,.links] | @text "| \(.[0]) | \(.[1]) | \(.[2]) | \(.[3]) |"' results.json
+          jq -r '.results[] | [.severity,.resource,.description,.links] | @text "| \(.[0]) | \(.[1]) | \(.[2]) | \(.[3]) |"' results.json >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
           
       # Checks if tfsec dind't found vulnerabilities
       - name: Parse tfsec json result status
         id: tfsec_success
-        if: ${{ steps.tfsec_json.outcome }} == 'failure'
+        if: ${{ (steps.tfsec_json.outcome == 'failure') }}
         run: echo "TFSEC_STATUS=No vulnerabilities detected" >> $GITHUB_ENV
         
       # Checks if tfsec found vulnerabilities
       - name: Parse tfsec json result status
         id: tfsec_failure
-        if: ${{ steps.tfsec_json.outcome }} == 'success'
+        if: ${{ (steps.tfsec_json.outcome == 'success') }}
         run: echo "TFSEC_STATUS=Vulnerabilities detected" >> $GITHUB_ENV
           
       # Intall infra cost for cost comparision between the corrent environment and the environment after the terraform apply
