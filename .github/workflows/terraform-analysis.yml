@@ -193,9 +193,9 @@ jobs:
         id: tfsec_json
         continue-on-error: true 
         run: |
-          echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
           #jq -c '.results[]|[.severity,.resource,.description,.links]' results.json | column -t -s'[],"' >> $GITHUB_ENV
-          jq -r '.results[] | sort_by(.severity) | .[] | @text "| [\.severity | \(.resource) | \(.description) | \(.links)"' results.json
+          echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
+          jq -r '.results[] | sort_by(.severity) | .[] | @text "| [\(.severity) | \(.resource) | \(.description) | \(.links)"' results.json
           echo "EOF" >> $GITHUB_ENV
           
       # Checks if tfsec dind't found vulnerabilities
@@ -285,6 +285,7 @@ jobs:
 
             #### Terraform Initialization ⚙️\`${ process.env.INIT_OUTCOME }\`
             #### Terraform Workspace ⚙️\`${process.env.WRK_OUTCOME}\`
+            #### Terraform Plam ⚙️\`${process.env.PLAN_OUTCOME}\`
 
             #### Terraform Security Check ☣️\`${{ env.TFSEC_STATUS }}\`
             <details><summary>Show security results</summary>
