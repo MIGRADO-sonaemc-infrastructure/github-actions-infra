@@ -194,17 +194,18 @@ jobs:
         continue-on-error: true 
         run: |
           echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
-          jq -c '.results[]|[.severity,.resource,.description,.links]' results.json | column -t -s'[],"' >> $GITHUB_ENV
+          #jq -c '.results[]|[.severity,.resource,.description,.links]' results.json | column -t -s'[],"' >> $GITHUB_ENV
+          jq -r '.results[] | sort_by(.severity) | .[] | @text "| [\.severity | \(.resource) | \(.description) | \(.links)"' results.json
           echo "EOF" >> $GITHUB_ENV
           
       # Checks if tfsec dind't found vulnerabilities
-      - name: Parse tfsec json result
+      - name: Parse tfsec json result status
         id: tfsec_success
         if: ${{ steps.tfsec_json.outcome }} == 'failure'
         run: echo "TFSEC_STATUS=No vulnerabilities detected" >> $GITHUB_ENV
         
       # Checks if tfsec found vulnerabilities
-      - name: Parse tfsec json result
+      - name: Parse tfsec json result status
         id: tfsec_failure
         if: ${{ steps.tfsec_json.outcome }} == 'success'
         run: echo "TFSEC_STATUS=Vulnerabilities detected" >> $GITHUB_ENV
@@ -288,12 +289,11 @@ jobs:
             #### Terraform Security Check ☣️\`${{ env.TFSEC_STATUS }}\`
             <details><summary>Show security results</summary>
             
-            \`\`\`\n
             | Severity | Resource ID | Description | Links |
             | --------- | ----------- | ----------- | -------------- |
             ${{ env.TFSEC_OUTPUT }}
-            \`\`\`
             
+            </details>
                  
             *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
 
@@ -327,6 +327,7 @@ jobs:
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TF_WORKSPACE: ${{ env.TERRAFORM_WORKSPACE }} Part 1
+          EXPAND_SUMMARY_DETAILS: 'false'
         with:
           commenter_type: plan
           commenter_input: ${{ env.TRUNCATED_PLAN_PART1 }}
@@ -338,6 +339,7 @@ jobs:
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TF_WORKSPACE: ${{ env.TERRAFORM_WORKSPACE }} Part 2
+          EXPAND_SUMMARY_DETAILS: 'false'
         with:
           commenter_type: plan
           commenter_input: ${{ env.TRUNCATED_PLAN_PART2 }}
