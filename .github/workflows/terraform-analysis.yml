@@ -199,12 +199,14 @@ jobs:
           
       # Checks if tfsec dind't found vulnerabilities
       - name: Parse tfsec json result
-        id: ${{ steps.tfsec_json.outcome }} == 'failure'
+        id: tfsec_success
+        if: ${{ steps.tfsec_json.outcome }} == 'failure'
         run: echo "TFSEC_STATUS=No vulnerabilities detected" >> $GITHUB_ENV
         
       # Checks if tfsec found vulnerabilities
       - name: Parse tfsec json result
-        id: ${{ steps.tfsec_json.outcome }} == 'success'
+        id: tfsec_failure
+        if: ${{ steps.tfsec_json.outcome }} == 'success'
         run: echo "TFSEC_STATUS=Vulnerabilities detected" >> $GITHUB_ENV
           
       # Intall infra cost for cost comparision between the corrent environment and the environment after the terraform apply
