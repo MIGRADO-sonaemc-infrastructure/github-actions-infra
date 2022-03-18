@@ -194,7 +194,7 @@ jobs:
         continue-on-error: true 
         run: | 
           echo "TFSEC_OUTPUT<<EOF" >> $GITHUB_ENV
-          jq -r '.results[] | sort_by(.severity) | [.severity,.resource,.description,.links] | @text "| [\(.severity) | \(.resource) | \(.description) | \(.links)"' results.json
+          jq -r '.results[] | [.severity,.resource,.description,.links] | @text "| \(.[0]) | \(.[1]) | \(.[2]) | \(.[3]) |"' results.json
           echo "EOF" >> $GITHUB_ENV
           
       # Checks if tfsec dind't found vulnerabilities
