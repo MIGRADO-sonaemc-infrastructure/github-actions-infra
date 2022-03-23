@@ -344,6 +344,16 @@ jobs:
           commenter_type: plan
           commenter_input: ${{ env.TRUNCATED_PLAN_PART2 }}
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+          
+      # Upload tfplan and .terraform.lock.hcl files as an action artifcat to used in the deploy action
+      - name: Upload tfplan artifacts
+        continue-on-error: true 
+        uses: actions/upload-artifact@v2
+        with:
+          name: "tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}"
+          path: |
+            ./tfplan
+            ./.terraform.lock.hcl
         
       # Fail the pipeline in any of the previous validations fails
       - name: Check action status
@@ -359,16 +369,6 @@ jobs:
           echo "Terraform workspace select: ${{ steps.workspace.outcome }}"
           exit 1
         
-
-      # Upload tfplan and .terraform.lock.hcl files as an action artifcat to used in the deploy action
-      - name: Upload tfplan artifacts
-        continue-on-error: true 
-        uses: actions/upload-artifact@v2
-        with:
-          name: "tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}"
-          path: |
-            ./tfplan
-            ./.terraform.lock.hcl
       
 
         # FORMATAR JSON TFSEC
