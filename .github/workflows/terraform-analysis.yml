@@ -42,6 +42,7 @@ jobs:
         with:
           token: ${{ secrets.token }}
           ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: true
           
       # hide the previous comments from the pull request history   
       - name: Hide bot comments
