@@ -124,6 +124,7 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'actions[bot]@users.noreply.github.com'
           git commit -am "[Action] Updated code formatting"
+          git config --global url."https://oauth2:${{ secrets.token }}@github.com".insteadOf https://github.com
           git push
       # Install tfling
       - uses: terraform-linters/setup-tflint@v1
@@ -155,12 +156,12 @@ jobs:
       
       # Initialize terrform
       - name: Terraform Init
-        working-directory: root
+        #working-directory: root
         id: init
         run: terraform init
         continue-on-error: true 
-        env:
-          GIT_SSH_COMMAND: "echo '${{ secrets.GH_SSH_KEY }}' > id_rsa && ssh-keyscan github.com > known_hosts && chmod 600 id_rsa known_hosts && ssh -i ./id_rsa -o UserKnownHostsFile=./known_hosts"
+        #env:
+          #GIT_SSH_COMMAND: "echo '${{ secrets.GH_SSH_KEY }}' > id_rsa && ssh-keyscan github.com > known_hosts && chmod 600 id_rsa known_hosts && ssh -i ./id_rsa -o UserKnownHostsFile=./known_hosts"
         
       # Select the desired workspace
       - name: Terraform workspace select
