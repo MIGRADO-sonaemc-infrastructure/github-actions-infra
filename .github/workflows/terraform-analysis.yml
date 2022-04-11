@@ -73,6 +73,10 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.4
         with:
             ssh-private-key: ${{ secrets.ssh_git }}
+            
+      - uses: oleksiyrudenko/gha-git-credentials@v2-latest
+        with:
+          token: ${{ secrets.token }}
       
       # Install terraform cli in the agent
       # Terraform version is fixed to prevent version conflicts between agents
