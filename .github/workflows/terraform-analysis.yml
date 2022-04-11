@@ -155,6 +155,7 @@ jobs:
       
       # Initialize terrform
       - name: Terraform Init
+        working-directory: root
         id: init
         run: terraform init
         continue-on-error: true 
