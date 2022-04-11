@@ -74,8 +74,10 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.ssh_git }}
             
-      - uses: oleksiyrudenko/gha-git-credentials@v2-latest
+      - name: Configure GitHub PAT
+        uses: oleksiyrudenko/gha-git-credentials@v2-latest
         with:
+          global: true
           token: ${{ secrets.token }}
       
       # Install terraform cli in the agent
