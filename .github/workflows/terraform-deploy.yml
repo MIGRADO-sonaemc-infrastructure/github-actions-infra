@@ -73,31 +73,24 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.ssh_git }}
 
-      #- name: Download artifact
-       # uses: dawidd6/action-download-artifact@v2
-        #with:
-          #github_token: ${{secrets.token}}
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{secrets.token}}
           # Required, workflow file name or ID
-          #workflow: terraform-analysis.yml
+          workflow: terraform-analysis.yml
           # Optional, the status or conclusion of a completed workflow to search for
-          #workflow_conclusion: completed
+          workflow_conclusion: completed
           # Optional, will get head commit SHA
-          #pr: ${{github.event.pull_request.number}}
+          pr: ${{github.event.pull_request.number}}
           # Optional, directory where to extract artifact. Defaults to the artifact name (see `name` input)
-          #path: ./plans
+          path: ./plans
           # Optional, defaults to current repo
-          #repo: ${{github.repository}}
+          repo: ${{github.repository}}
           # Optional, check the workflow run whether it has an artifact
           # then will get the last available artifact from previous workflow
           # default false, just try to download from the last one
-          #check_artifacts:  false
-          
-          
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}
-          path: ./plans
+          check_artifacts:  false
 
       - name: Move artifact files
         run: |
