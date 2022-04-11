@@ -80,7 +80,7 @@ jobs:
           # Required, workflow file name or ID
           workflow: terraform-analysis.yml
           # Optional, the status or conclusion of a completed workflow to search for
-          #workflow_conclusion: failure
+          workflow_conclusion: completed
           # Optional, will get head commit SHA
           pr: ${{github.event.pull_request.number}}
           # Optional, directory where to extract artifact. Defaults to the artifact name (see `name` input)
