@@ -74,11 +74,11 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.ssh_git }}
             
-      - name: Configure GitHub PAT
-        uses: oleksiyrudenko/gha-git-credentials@v2-latest
-        with:
-          global: true
-          token: ${{ secrets.token }}
+      #- name: Configure GitHub PAT
+       # uses: oleksiyrudenko/gha-git-credentials@v2-latest
+        #with:
+         # global: true
+          #token: ${{ secrets.token }}
       
       # Install terraform cli in the agent
       # Terraform version is fixed to prevent version conflicts between agents
@@ -157,6 +157,8 @@ jobs:
         id: init
         run: terraform init
         continue-on-error: true 
+        env:
+          GIT_SSH_COMMAND: "echo '${{ secrets.GH_SSH_KEY }}' > id_rsa && ssh-keyscan github.com > known_hosts && chmod 600 id_rsa known_hosts && ssh -i ./id_rsa -o UserKnownHostsFile=./known_hosts"
         
       # Select the desired workspace
       - name: Terraform workspace select
