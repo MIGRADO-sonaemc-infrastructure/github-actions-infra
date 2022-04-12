@@ -47,6 +47,7 @@ jobs:
       # hide the previous comments from the pull request history   
       - name: Hide bot comments
         uses: kanga333/comment-hider@master
+        continue-on-error: true
         with:
           github_token: ${{ secrets.token }}
       
