@@ -99,7 +99,7 @@ jobs:
             gh run list \
               --workflow terraform-analysis.yml \
               --json conclusion,headSha,status,databaseId \
-              --jq ".[] | select( .conclusion == \"completed\" and .headSha == \"${{github.sha}}\") | .databaseId" \
+              --jq ".[] | select( .conclusion == \"completed\") | .databaseId" \
           )"
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -108,7 +108,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: terraform-analysis.yml
-          run_id: ${{ steps.get_run_id.outputs.run_id }}
+          run_id: ${{ steps.get_run_id.outputs.run_id }} 
           # workflow_conclusion: success
           name: tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}
           commit: ${{ github.sha }}
