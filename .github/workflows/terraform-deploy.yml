@@ -112,7 +112,7 @@ jobs:
           # workflow_conclusion: success
           name: tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}
           commit: ${{ github.sha }}
-          path: ./plan
+          path: ./plans
 
       - name: Move artifact files
         run: |
