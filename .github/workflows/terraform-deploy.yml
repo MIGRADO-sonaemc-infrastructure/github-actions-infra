@@ -110,7 +110,7 @@ jobs:
           workflow: terraform-analysis.yml
           run_id: ${{ steps.get_run_id.outputs.run_id }}
           # workflow_conclusion: success
-          name: ServiceStack Packages
+          name: Terraform Analysis
           commit: ${{ github.sha }}
           path: ./plan
 
