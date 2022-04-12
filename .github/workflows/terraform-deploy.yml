@@ -134,6 +134,10 @@ jobs:
         id: version
         run: sudo terraform version
       
+      - name: Configure Git
+        run: | 
+          git config --global url."https://oauth2:${{ secrets.token }}@github.com".insteadOf https://github.com
+          git config --list
 
       # initialize terrform
       - name: Terraform Init
