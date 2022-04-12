@@ -153,7 +153,8 @@ jobs:
         run: terraform version
         continue-on-error: true 
         
-      - run: | 
+      - name: Configure Git
+        run: | 
           git config --global url."https://oauth2:${{ secrets.token }}@github.com".insteadOf https://github.com
           git config --list
       
