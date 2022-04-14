@@ -117,8 +117,8 @@ jobs:
       - name: Move artifact files
         run: |
           ls -la ./plans
-          cp ./plans/.terraform.lock.hcl .
-          cp ./plans/* .
+          cp ./plans/tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}/.terraform.lock.hcl .
+          cp ./plans/tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}/* .
           ls -la
           sudo chmod -R ugo+rwX .
         working-directory: .
