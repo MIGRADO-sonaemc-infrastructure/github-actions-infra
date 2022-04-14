@@ -180,7 +180,7 @@ jobs:
       # Select the desired workspace
       - name: Terraform workspace select
         id: workspace
-        if: ${{ failure() }}
+        if: ${{ steps.workspace_new.outcome }} == 'failure'
         run: |
           terraform workspace select ${{ env.TERRAFORM_WORKSPACE }}
   
