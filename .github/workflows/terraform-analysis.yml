@@ -170,13 +170,19 @@ jobs:
         #env:
           #GIT_SSH_COMMAND: "echo '${{ secrets.GH_SSH_KEY }}' > id_rsa && ssh-keyscan github.com > known_hosts && chmod 600 id_rsa known_hosts && ssh -i ./id_rsa -o UserKnownHostsFile=./known_hosts"
         
+      # Try to create a new workspace
+      - name: Terraform workspace new
+        id: workspace_new
+        run: |
+          terraform workspace new ${{ env.TERRAFORM_WORKSPACE }}
+        continue-on-error: true 
+        
       # Select the desired workspace
       - name: Terraform workspace select
         id: workspace
+        if: ${{ failure() }}
         run: |
-          terraform workspace new ${{ env.TERRAFORM_WORKSPACE }}
           terraform workspace select ${{ env.TERRAFORM_WORKSPACE }}
-        continue-on-error: true 
   
       # Run the terraform plan to get the changes to be applied
       - name: Terraform Plan
