@@ -28,6 +28,8 @@ jobs:
   terraform-analysis:
     name: Terraform Analysis
     runs-on: ubuntu-latest
+    # Only re-runs only when the commit is not made by the GitHub Action
+    if: ${{ github.event.pusher.name == 'github-actions[bot]' }}
     env:
       working-directory: .
       # credentials for the app reg that as permissions over azure subscriptions and the storage account where the tfstate is stored
@@ -384,8 +386,15 @@ jobs:
           echo "Terraform Init: ${{ steps.init.outcome }}"
           echo "Terraform workspace select: ${{ steps.workspace.outcome }}"
           exit 1
+          
+      - name: Create comment
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          issue-number: ${{ steps.fmt.outcome == 'failure' }}
+          body: |
+            - ### Terraform Analysis workflow detected and commited changes to your code formatting
+            - ### Pull the changes and recommit them
+          reactions: 'eyes'
         
       
-
-        # FORMATAR JSON TFSEC
         # VER PULL REQUEST QUEUE
