@@ -29,7 +29,7 @@ jobs:
     name: Terraform Analysis
     runs-on: ubuntu-latest
     # Only re-runs only when the commit is not made by the GitHub Action
-    if: ${{ github.event.pusher.name != 'github-actions[bot]' }}
+    #if: ${{ github.event.pusher.name != 'github-actions[bot]' }}
     env:
       working-directory: .
       # credentials for the app reg that as permissions over azure subscriptions and the storage account where the tfstate is stored
@@ -100,8 +100,8 @@ jobs:
           working-dir: .
           output-file: README.md
           output-method: inject
-          git-push: "true"
-          git-commit-message: "[Action] Updated code documentation"
+          git-push: "false"
+          #git-commit-message: "[Action] Updated code documentation"
 
       
       # Check if there are format misconfigurations
@@ -126,7 +126,7 @@ jobs:
           sudo chmod -R ugo+rwX .
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'actions[bot]@users.noreply.github.com'
-          git commit -am "[Action] Updated code formatting"
+          git commit -am "[Action] Updated code formatting and/or documentation"
           git push
       # Install tfling
       - uses: terraform-linters/setup-tflint@v1
@@ -388,15 +388,6 @@ jobs:
           echo "Terraform Init: ${{ steps.init.outcome }}"
           echo "Terraform workspace select: ${{ steps.workspace.outcome }}"
           exit 1
-          
-      - name: Create comment
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          issue-number: ${{ steps.fmt.outcome == 'failure' }}
-          body: |
-            - ### Terraform Analysis workflow detected and commited changes to your code formatting
-            - ### Pull the changes and recommit them
-          reactions: 'eyes'
         
       
         # VER PULL REQUEST QUEUE
