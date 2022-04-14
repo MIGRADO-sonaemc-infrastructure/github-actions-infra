@@ -29,7 +29,7 @@ jobs:
     name: Terraform Analysis
     runs-on: ubuntu-latest
     # Only re-runs only when the commit is not made by the GitHub Action
-    if: ${{ github.event.pusher.name == 'github-actions[bot]' }}
+    if: ${{ github.event.pusher.name != 'github-actions[bot]' }}
     env:
       working-directory: .
       # credentials for the app reg that as permissions over azure subscriptions and the storage account where the tfstate is stored
