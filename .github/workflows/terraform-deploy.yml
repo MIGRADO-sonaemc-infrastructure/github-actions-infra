@@ -73,46 +73,46 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.ssh_git }}
 
-      #- name: Download artifact
-       # uses: dawidd6/action-download-artifact@v2
-        #with:
-         # github_token: ${{secrets.token}}
-          # Required, workflow file name or ID
-          #workflow: terraform-analysis.yml
-          # Optional, the status or conclusion of a completed workflow to search for
-          #workflow_conclusion: completed
-          # Optional, will get head commit SHA
-          #pr: ${{github.event.pull_request.number}}
-          # Optional, directory where to extract artifact. Defaults to the artifact name (see `name` input)
-          #path: ./plans
-          # Optional, defaults to current repo
-          #repo: ${{github.repository}}
-          # Optional, check the workflow run whether it has an artifact
-          # then will get the last available artifact from previous workflow
-          # default false, just try to download from the last one
-          #check_artifacts:  false
-          
-      - name: Get Run ID
-        id: get_run_id
-        run: |
-          echo "::set-output name=run_id::$(\
-            gh run list \
-              --workflow terraform-analysis.yml \
-              --json conclusion,headSha,status,databaseId \
-              --jq ".[] | select( .conclusion == \"completed\") | .databaseId" \
-          )"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
       - name: Download artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          github_token: ${{secrets.token}}
+          # Required, workflow file name or ID
           workflow: terraform-analysis.yml
-          run_id: 2159874202 #${{ steps.get_run_id.outputs.run_id }} 
-          # workflow_conclusion: success
-          name: tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}
-          commit: ${{ github.sha }}
+          # Optional, the status or conclusion of a completed workflow to search for
+          workflow_conclusion: completed
+          # Optional, will get head commit SHA
+          pr: ${{github.event.pull_request.number}}
+          # Optional, directory where to extract artifact. Defaults to the artifact name (see `name` input)
           path: ./plans
+          # Optional, defaults to current repo
+          repo: ${{github.repository}}
+          # Optional, check the workflow run whether it has an artifact
+          # then will get the last available artifact from previous workflow
+          # default false, just try to download from the last one
+          check_artifacts:  false
+          
+      #- name: Get Run ID
+        #id: get_run_id
+        #run: |
+       #   echo "::set-output name=run_id::$(\
+        #    gh run list \
+         #     --workflow terraform-analysis.yml \
+          #    --json conclusion,headSha,status,databaseId \
+           #   --jq ".[] | select( .conclusion == \"completed\") | .databaseId" \
+        #  )"
+       # env:
+          #GITHUB_TOKEN: ${{ github.token }}
+
+      #- name: Download artifact
+        #uses: dawidd6/action-download-artifact@v2
+        #with:
+          #workflow: terraform-analysis.yml
+          #run_id: 2159874202 #${{ steps.get_run_id.outputs.run_id }} 
+          # workflow_conclusion: success
+          #name: tfplan-${{ env.TERRAFORM_WORKSPACE }}-${{ github.event.pull_request.number}}
+          #commit: ${{ github.sha }}
+          #path: ./plans
 
       - name: Move artifact files
         run: |
