@@ -302,7 +302,7 @@ jobs:
 
             #### Terraform Initialization ⚙️\`${ process.env.INIT_OUTCOME }\`
             #### Terraform Workspace ⚙️\`${process.env.WRK_OUTCOME}\`
-            #### Terraform Plam ⚙️\`${process.env.PLAN_OUTCOME}\`
+            #### Terraform Plan ⚙️\`${process.env.PLAN_OUTCOME}\`
 
             #### Terraform Security Check ☣️\`${{ env.TFSEC_STATUS }}\`
             <details><summary>Show security results</summary>
