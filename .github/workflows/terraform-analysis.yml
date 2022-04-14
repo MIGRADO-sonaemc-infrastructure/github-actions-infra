@@ -173,7 +173,9 @@ jobs:
       # Select the desired workspace
       - name: Terraform workspace select
         id: workspace
-        run: terraform workspace select ${{ env.TERRAFORM_WORKSPACE }}
+        run: |
+          terraform workspace new ${{ env.TERRAFORM_WORKSPACE }}
+          terraform workspace select ${{ env.TERRAFORM_WORKSPACE }}
         continue-on-error: true 
   
       # Run the terraform plan to get the changes to be applied
